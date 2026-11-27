@@ -3,9 +3,9 @@
   "manifest_version": "0.3",
   "name": "cineapp",
   "display_name": "CineApp",
-  "version": "1.2.1",
+  "version": "1.4.0",
   "description": "CineApp is a movie-making machine controlled by voice. Let Claude hand it a job: make films, drive your apps, type for you, check your projects.",
-  "long_description": "CineApp is a movie-making machine controlled by voice — the filmmaking app and voice assistant in your Mac's menu bar. With this extension Claude can hand CineApp a job: check how a film project stands, look at its character, prop and location sheets, drive apps like After Effects, Premiere and Photoshop, type at the cursor, or tidy a folder.\n\nCineApp has to be installed and running (get it at zxrstudios.com/cineapp). Anything that costs credits — films, renders, character sheets, audio, music, images — never starts from Claude: CineApp shows a Yes / Not yet card on your Mac and waits for your own click.",
+  "long_description": "CineApp is a movie-making machine controlled by voice — the filmmaking app and voice assistant in your Mac's menu bar. With this extension Claude can hand CineApp a job: check how a film project stands, look at its character, prop and location sheets, drive apps like After Effects, Premiere and Photoshop, type at the cursor, or tidy a folder.\n\nCineApp has to be installed and running (get it at zxrstudios.com/cineapp). Claude can also see what's rendering, make the whole movie on one price card, and stop a render. Anything that costs credits stops at that price card on your Mac and waits for your own click — unless you turn on \"Claude can approve spending\" in CineApp Settings › Computer, which lets Claude press cards up to the limit you choose.",
   "author": {
     "name": "Gaudens Zulu",
     "url": "https://github.com/gaudencez"
@@ -60,6 +60,26 @@
     {
       "name": "cineapp_add_bot",
       "description": "Add a bot you designed with Claude to your CineApp crew."
+    },
+    {
+      "name": "cineapp_renders",
+      "description": "What CineApp is rendering, and the card waiting for an answer."
+    },
+    {
+      "name": "cineapp_film",
+      "description": "Make the whole movie (or one reel) on one price card."
+    },
+    {
+      "name": "cineapp_approve",
+      "description": "Answer the waiting price card, within your limit."
+    },
+    {
+      "name": "cineapp_gemini",
+      "description": "Use Gemini (Google's Gemini 4 Neon) through CineApp: QC reels with a priced fix card, watch any video, or ask anything with files and Google Search."
+    },
+    {
+      "name": "cineapp_stop",
+      "description": "Stop what CineApp is rendering."
     }
   ],
   "keywords": [

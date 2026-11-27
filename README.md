@@ -22,8 +22,11 @@ CineApp is a movie-making machine controlled by voice: the filmmaking app and vo
 - *"Type 'I'll be there at eight' where my cursor is."* → `cineapp_type`
 - *"Tidy my Downloads folder."* → `cineapp_organize_folder`
 - *"Where does my Coaster project stand?"* → `cineapp_status`, `cineapp_projects`, `cineapp_sheets`
+- *"Have Gemini QC reel 3."* → `cineapp_gemini` (a timed report of every fault, and the price to fix it on one card)
+- *"Watch this YouTube trailer and tell me how it's paced."* → `cineapp_gemini`
+- *"Make the whole movie."* / *"What's rendering?"* / *"Stop it."* → `cineapp_film`, `cineapp_renders`, `cineapp_stop`
 
-Anything that costs credits — films, renders, character sheets, audio, music, images — never starts from Claude. CineApp shows a **Yes / Not yet** card on your Mac and waits for your own click.
+Anything that costs credits — films, renders, character sheets, audio, music, images, Gemini's shot fixes — stops at a price card on your Mac and waits for your own click. Claude can press a card's paid button only if you turn on **Claude can approve spending** in CineApp Settings › Computer, and only up to the limit you set there; it can always press **Not yet**. A Gemini watch or question costs a few cents of credit, charged after it answers.
 
 ## Tools
 
@@ -36,6 +39,13 @@ Anything that costs credits — films, renders, character sheets, audio, music, 
 | `cineapp_organize_folder` | Moves a folder's files into type sub-folders | destructive (moves files) |
 | `cineapp_type` | Types text at the cursor | destructive (writes into the focused app) |
 | `cineapp_do` | Asks CineApp to do something on your Mac, in plain language | destructive, open-world |
+| `cineapp_gemini` | Gemini 4 Neon: QC reels (report + priced fix card), watch any video or YouTube link, ask anything with files or Google Search | open-world |
+| `cineapp_renders` | What's rendering, and the price card waiting for an answer | read-only |
+| `cineapp_film` | Puts up the one card for the whole movie (or one reel) | open-world (spends only on Approve) |
+| `cineapp_approve` | Answers the waiting card — Not yet always; Approve only within your limit, if you allowed it | destructive, open-world |
+| `cineapp_stop` | Stops rendering | destructive |
+| `cineapp_teach_skill` | Teaches one of your CineApp bots a skill from this Mac | — |
+| `cineapp_add_bot` | Adds a bot to your CineApp crew from a template | — |
 
 ## Privacy Policy
 

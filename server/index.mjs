@@ -10,8 +10,10 @@
  * The same file runs for Claude Code (~/.claude/mcp-servers/cineapp-mcp.mjs).
  *
  * Nothing that spends credits starts from here on its own: films, sheets,
- * audio, music and images all stop on the Mac for the person's own click
- * ("Yes" / "Not yet") inside CineApp before a cent is spent.
+ * audio, music and images all stop on the Mac at a price card inside CineApp.
+ * The person clicks it — or, only if they turned on "Claude can approve
+ * spending" in CineApp Settings › Computer, Claude may press it with
+ * cineapp_approve when its price is within their limit (owner, Nov 26 2026).
  */
 
 import { execFile } from 'node:child_process';
@@ -20,7 +22,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import readline from 'node:readline';
 
-const VERSION = '1.2.1';
+const VERSION = '1.4.0';
 
 // Prefer the binary inside the installed app; fall back to the PATH symlink.
 const CANDIDATES = [
@@ -152,7 +154,7 @@ const TOOLS = [
   {
     name: 'cineapp_do',
     description:
-      "Send a free-form request to CineApp's own agent, exactly as if spoken to the app — open and control apps (After Effects, Premiere, Photoshop, Finder…), type, look at the screen, run CineApp's film factory. POWERFUL AND SIDE-EFFECTING — confirm the exact wording with the user first. Anything that spends credits (films, renders, sheets, audio, music, images) does NOT start from here: CineApp shows a Yes / Not yet card on the Mac and waits for the person's own click, so tell them to check their Mac. Can run for many minutes.",
+      "Send a free-form request to CineApp's own agent, exactly as if spoken to the app — open and control apps (After Effects, Premiere, Photoshop, Finder…), type, look at the screen, run CineApp's film factory. POWERFUL AND SIDE-EFFECTING — confirm the exact wording with the user first. Anything that spends credits (films, renders, sheets, audio, music, images) stops at a price card on the Mac: see it with cineapp_renders, press it with cineapp_approve if it's within the person's limit, otherwise tell them to check their Mac. To make a whole movie use cineapp_film instead. Can run for many minutes.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -165,6 +167,75 @@ const TOOLS = [
       additionalProperties: false,
     },
     annotations: { title: 'Ask CineApp to do something', destructiveHint: true, openWorldHint: true },
+  },
+  {
+    name: 'cineapp_renders',
+    description:
+      "What CineApp is rendering right now and what isn't: each production that is filming, how many of its reels are filmed and which are filming now, how many of the account's 5 video slots are in use on this Mac — and the price card waiting for an answer (its title, price and buttons), with whether Claude may approve it. Read-only and instant. Check this before and after cineapp_film, cineapp_approve and cineapp_stop.",
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    annotations: { title: "What's rendering", ...READ_ONLY },
+  },
+  {
+    name: 'cineapp_film',
+    description:
+      "Make the whole movie (or one reel) of a CineApp production. With no reel it is THE WHOLE MOVIE: one price card covers everything still missing — the sheets not drawn yet and every reel still to film — and its one Approve draws them, films every reel (up to 5 at once), retries a reel that didn't come back and joins them into one film, with no further questions. Puts the card up and returns at once with its price; then approve it with cineapp_approve (if within the person's limit) or tell them to click it on their Mac. A reel number films just that reel. SPENDS CREDITS once approved — use it when the person asks for the movie, the whole thing, or a reel.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project: { type: 'string', description: 'Project name. Optional — the open one if left out.' },
+        reel: { type: 'string', description: "Leave out (or 'rest') for the whole movie; a number for one reel." },
+      },
+      additionalProperties: false,
+    },
+    annotations: { title: 'Make the movie', destructiveHint: false, openWorldHint: true },
+  },
+  {
+    name: 'cineapp_approve',
+    description:
+      "Answer the price card waiting in CineApp. 'approve' (the default) presses its paid button — allowed only when the person turned on \"Claude can approve spending\" in CineApp Settings › Computer AND the card's price is within their limit (it says so plainly if not; then the card waits for their own click). 'decline' presses Not yet, which is always allowed and spends nothing. You may also give a button's exact words. Approve only what the person asked for in this conversation.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        choice: { type: 'string', description: "'approve' (default), 'decline', or a button's exact words." },
+      },
+      additionalProperties: false,
+    },
+    annotations: { title: 'Answer the price card', destructiveHint: true, openWorldHint: true },
+  },
+  {
+    name: 'cineapp_stop',
+    description:
+      "Stop what CineApp is rendering — one production, or everything if no project is given. Takes effect within about ten seconds; takes already made are kept and unspent seconds come back. Use when the person says stop, cancel or that's wrong about a render.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        project: { type: 'string', description: "Project name. Optional — leave out (or 'all') to stop every render." },
+      },
+      additionalProperties: false,
+    },
+    annotations: { title: 'Stop rendering', destructiveHint: true, openWorldHint: false },
+  },
+  {
+    name: 'cineapp_gemini',
+    description:
+      "Use GEMINI (Google's Gemini 4 Neon, through the person's CineApp account) for anything. action 'qc' — Gemini watches a production's filmed reels (reels '3', '2,5' or 'all'), checks each against its script, and returns every fault with its time plus the price to fix it; CineApp puts ONE fix card up whose Approve re-films only the faulty shots with Gemini's notes and then re-checks them (approve it with cineapp_approve if within the person's limit, or tell them to click it). action 'fix' — that fix card again from the saved report, no new watch. action 'watch' — Gemini watches any video (a path on the Mac, 'reel 3', 'the film', or a YouTube link; optional from/to seconds) and answers the question (or runs the QC checklist). action 'ask' — any question, optionally with files (pictures, audio, PDFs, videos, YouTube links) and Google Search for current facts with sources. A watch or question costs a few cents of the person's credit, charged after it answers; a fix is film and waits for its card.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['qc', 'fix', 'watch', 'ask'], description: "qc | fix | watch | ask (default ask)." },
+        project: { type: 'string', description: 'Production name for qc/fix/reels. Optional — the open one if left out.' },
+        reels: { type: 'string', description: "qc/fix: '3', '2,5', '2-4' or 'all' (default all)." },
+        video: { type: 'string', description: "watch: a full path, 'reel 3', 'the film', or a YouTube link." },
+        question: { type: 'string', description: 'watch/ask: what to ask Gemini. Self-contained — Gemini cannot see this chat.' },
+        files: { type: 'string', description: 'ask: files to show it, comma- or newline-separated full paths or YouTube links (up to 10).' },
+        search: { type: 'boolean', description: 'ask: let Gemini search Google and cite sources.' },
+        from: { type: 'number', description: 'watch: start of the stretch, seconds.' },
+        to: { type: 'number', description: 'watch: end of the stretch, seconds.' },
+        model: { type: 'string', description: "Optional: neon (default), carbon (Google's strongest), flash (fast), lite (cheapest)." },
+      },
+      additionalProperties: false,
+    },
+    annotations: { title: 'Ask Gemini', destructiveHint: false, openWorldHint: true },
   },
   {
     name: 'cineapp_teach_skill',
@@ -265,9 +336,25 @@ async function dispatch(name, args) {
     case 'do':
       if (!args?.request) return { ok: false, text: 'request is required.' };
       return callCineApp(['do', String(args.request)], 960_000);
+    case 'renders':
+      return callCineApp(['renders'], 60_000);
+    case 'film': {
+      const spec = { project: String(args?.project ?? ''), reel: String(args?.reel ?? 'rest') || 'rest' };
+      return callCineApp(['film', JSON.stringify(spec)], 420_000);
+    }
+    case 'approve':
+      return callCineApp(['approve', String(args?.choice ?? 'approve') || 'approve'], 30_000);
+    case 'stop':
+      return callCineApp(['stop', String(args?.project ?? 'all') || 'all'], 60_000);
     case 'teach_skill':
       if (!args?.bot || !args?.path) return { ok: false, text: 'bot and path are required.' };
       return callCineApp(['teach', String(args.bot), String(args.path)], 60_000);
+    case 'gemini': {
+      const spec = { ...(args || {}) };
+      if (!spec.action) spec.action = 'ask';
+      if ((spec.action === 'ask') && !spec.question) return { ok: false, text: 'question is required.' };
+      return callCineApp(['gemini', JSON.stringify(spec)], 960_000);
+    }
     case 'add_bot': {
       if (!args?.name) return { ok: false, text: 'name is required.' };
       const bot = {
